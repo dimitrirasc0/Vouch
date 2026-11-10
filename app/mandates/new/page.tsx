@@ -1,11 +1,14 @@
 import type { Metadata } from 'next';
 import { NewMandate } from './new-mandate';
+import { SiteNav } from "../../site-nav";
 
 export const metadata: Metadata = { title: 'New mandate' };
 
 export default function Page() {
   return (
-    <main className="mx-auto w-full max-w-2xl px-4 py-12 font-paypal text-pp-ink sm:px-8">
+    <>
+      <SiteNav />
+      <main className="mx-auto w-full max-w-2xl px-4 py-12 font-paypal text-pp-ink sm:px-8">
       <p className="text-sm font-semibold uppercase tracking-wider text-pp-blue">Vouch</p>
       <h1 className="mt-1 text-[28px] font-semibold text-pp-navy">Give your shopping agent a mandate</h1>
       <p className="mt-2 text-pp-muted">
@@ -14,5 +17,6 @@ export default function Page() {
       </p>
       <NewMandate clientId={process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID ?? ''} />
     </main>
+    </>
   );
 }

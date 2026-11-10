@@ -79,10 +79,13 @@ function DeadlineRadar(props: AgWidgetParams) {
           const cd = countdown(c.days);
           const b = BADGE[c.badge] ?? { bg: '#f5f7fa', fg: '#545d68' };
           return (
-            <button
+            <div
               key={c.item}
-              type="button"
+              role="button"
+              tabIndex={0}
+              title="Click to filter the dashboard to this dispute"
               onClick={() => fields.item && widgetApi.toggleCrossFilter({ type: 'value', field: fields.item, value: c.item, group: 0 })}
+              onKeyDown={(e) => e.key === 'Enter' && fields.item && widgetApi.toggleCrossFilter({ type: 'value', field: fields.item, value: c.item, group: 0 })}
               style={{ textAlign: 'left', border: '1px solid #dbe1e8', borderRadius: 12, padding: 12, background: '#fff', cursor: 'pointer' }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
@@ -94,7 +97,16 @@ function DeadlineRadar(props: AgWidgetParams) {
                 {fields.amount ? widgetApi.formatFieldValue(fields.amount, c.amount as never) : ''}
               </div>
               <div style={{ fontSize: 11, color: '#545d68' }}>{fields.amount ? widgetApi.getFieldName(fields.amount) : ''}</div>
-            </button>
+              {/^PP-[A-Z]-/.test(c.item) && (
+                <a
+                  href={`/disputes/${encodeURIComponent(c.item)}`}
+                  onClick={(e) => e.stopPropagation()}
+                  style={{ display: 'inline-block', marginTop: 8, fontSize: 12, fontWeight: 700, color: '#0070e0', textDecoration: 'none' }}
+                >
+                  Open case →
+                </a>
+              )}
+            </div>
           );
         })}
       </div>

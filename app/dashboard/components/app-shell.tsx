@@ -1,6 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import { NavLinks } from '@/app/site-nav';
 import { BellIcon, HelpIcon } from './ui/icons';
 import { AgStudioLogo } from './ui/logo';
 
@@ -36,6 +37,7 @@ function TopBar() {
   return (
     <header className="flex h-16 shrink-0 items-center gap-6 border-b border-pp-border bg-white px-6">
       <BrandLockup />
+      <NavLinks />
       <div className="ml-auto flex items-center gap-1 text-pp-navy">
         <span className="inline-flex size-9 items-center justify-center rounded-full" title="Help">
           <HelpIcon />

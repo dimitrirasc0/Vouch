@@ -5,6 +5,7 @@ import { query } from '@/lib/db';
 import { getDisputeRow, refreshDispute } from '@/lib/disputes';
 import { latestRecommendation } from '@/lib/submit';
 import { Review } from './review';
+import { SiteNav } from "../../site-nav";
 
 export async function generateMetadata({ params }: PageProps<'/disputes/[id]'>) {
   return { title: `Dispute ${(await params).id}` };
@@ -34,7 +35,9 @@ export default async function Page({ params }: PageProps<'/disputes/[id]'>) {
     ?? ((dispute.raw.disputed_transactions as { items?: { notes?: string }[] }[] | undefined)?.[0]?.items?.[0]?.notes);
 
   return (
-    <main className="mx-auto w-full max-w-4xl px-4 py-10 font-paypal text-pp-ink sm:px-8">
+    <>
+      <SiteNav />
+      <main className="mx-auto w-full max-w-4xl px-4 py-10 font-paypal text-pp-ink sm:px-8">
       <Link href="/" className="text-sm font-semibold text-pp-blue hover:underline">
         ← All disputes
       </Link>
@@ -65,5 +68,6 @@ export default async function Page({ params }: PageProps<'/disputes/[id]'>) {
         trail={JSON.parse(JSON.stringify(latestTrail))}
       />
     </main>
+    </>
   );
 }

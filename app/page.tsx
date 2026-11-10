@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { connection } from 'next/server';
 import { query } from '@/lib/db';
 import { SyncButton } from './sync-button';
+import { SiteNav } from "./site-nav";
 
 export const metadata = { title: 'Vouch' };
 
@@ -35,18 +36,14 @@ export default async function Home() {
   );
 
   return (
-    <main className="mx-auto w-full max-w-4xl px-4 py-12 font-paypal text-pp-ink sm:px-8">
+    <>
+      <SiteNav />
+      <main className="mx-auto w-full max-w-4xl px-4 py-12 font-paypal text-pp-ink sm:px-8">
       <p className="text-sm font-semibold uppercase tracking-wider text-pp-blue">Vouch</p>
       <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-[28px] font-semibold text-pp-navy">Disputes</h1>
         <div className="flex items-center gap-3">
           <SyncButton />
-          <Link href="/dashboard" className="rounded-full border border-pp-border px-4 py-2 text-sm font-semibold text-pp-navy hover:bg-pp-highlight">
-            Dashboard
-          </Link>
-          <Link href="/mandates/new" className="rounded-full bg-pp-blue px-4 py-2 text-sm font-semibold text-white hover:bg-pp-blue-dark">
-            New mandate
-          </Link>
         </div>
       </div>
 
@@ -91,5 +88,6 @@ export default async function Home() {
         ))}
       </ul>
     </main>
+    </>
   );
 }

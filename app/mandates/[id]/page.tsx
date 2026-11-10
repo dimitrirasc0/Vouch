@@ -7,6 +7,7 @@ import { getMandate } from '@/lib/mandates';
 import { paypalGet } from '@/lib/paypal';
 import type { PurchaseRow } from '@/lib/purchases';
 import { RunShopper } from './run-shopper';
+import { SiteNav } from "../../site-nav";
 
 export async function generateMetadata({ params }: PageProps<'/mandates/[id]'>) {
   return { title: `Mandate ${(await params).id}` };
@@ -39,7 +40,9 @@ export default async function Page({ params }: PageProps<'/mandates/[id]'>) {
   );
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 py-10 font-paypal text-pp-ink sm:px-8">
+    <>
+      <SiteNav />
+      <main className="mx-auto w-full max-w-3xl px-4 py-10 font-paypal text-pp-ink sm:px-8">
       <Link href="/" className="text-sm font-semibold text-pp-blue hover:underline">
         ← Vouch
       </Link>
@@ -123,5 +126,6 @@ export default async function Page({ params }: PageProps<'/mandates/[id]'>) {
         </section>
       )}
     </main>
+    </>
   );
 }

@@ -27,7 +27,7 @@ const GREEN = rgb(0, 0.53, 0.35);
 const RED = rgb(0.77, 0.07, 0.18);
 
 // Standard PDF fonts only cover WinAnsi; replace anything else so drawing never throws.
-const safe = (s: string) => s.replace(/[^\x20-\x7E -ÿ]/g, (c) => ({ '—': '-', '–': '-', '’': "'", '‘': "'", '“': '"', '”': '"', '≤': '<=', '≥': '>=', '•': '-' })[c] ?? '?');
+const safe = (v: unknown) => (v instanceof Date ? v.toISOString() : String(v ?? '')).replace(/[^\x20-\x7E -ÿ]/g, (c) => ({ '—': '-', '–': '-', '’': "'", '‘': "'", '“': '"', '”': '"', '≤': '<=', '≥': '>=', '•': '-' })[c] ?? '?');
 
 function wrap(text: string, font: PDFFont, size: number, width: number): string[] {
   const lines: string[] = [];

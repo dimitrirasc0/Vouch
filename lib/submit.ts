@@ -67,7 +67,7 @@ async function call(path: string, body: FormData | object) {
   return { ok: res.ok, status: res.status, body: parsed, debugId: res.headers.get('paypal-debug-id') };
 }
 
-async function evidencePdf(rec: RecommendationRow, note: string) {
+export async function evidencePdf(rec: RecommendationRow, note: string) {
   const ev = rec.evidence ?? {};
   const purchase = ev.purchase_id ? await one<PurchaseRow>('SELECT * FROM purchases WHERE id = $1', [ev.purchase_id]) : undefined;
   const mandate = ev.mandate_id ? await getMandate(ev.mandate_id) : undefined;
@@ -84,10 +84,10 @@ async function evidencePdf(rec: RecommendationRow, note: string) {
     fingerprint: mandate.hash,
     paypalOrderId: mandate.order_id,
     paypalCustomId: order?.purchase_units[0]?.custom_id ?? null,
-    approvedAt: mandate.approved_at,
+    approvedAt: mandate.approved_at ? new Date(mandate.approved_at).toISOString() : null,
     approvedBy: mandate.buyer_email,
     authorizationId: mandate.authorization_id,
-    purchase: { item: purchase.item_name, amount: purchase.amount, currency: purchase.currency, captureId: purchase.capture_id, boughtAt: purchase.created_at },
+    purchase: { item: purchase.item_name, amount: purchase.amount, currency: purchase.currency, captureId: purchase.capture_id, boughtAt: new Date(purchase.created_at).toISOString() },
     tracking: { carrier: purchase.carrier, number: purchase.tracking_number },
     checks: ev.recheck?.checks ?? [],
     integrity: ev.verification ?? { hashMatches: false, signatureMatches: false, paypalMatches: null },

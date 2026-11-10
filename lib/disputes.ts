@@ -98,6 +98,8 @@ export function listDisputes() {
 export function allowedActions(d: PayPalDispute) {
   const rels = new Set((d.links ?? []).map((l) => l.rel));
   return {
+    // FIGHT is possible by uploading evidence, or (in INQUIRY) by escalating to a PayPal claim.
+    fight: rels.has('provide_evidence') || rels.has('escalate'),
     provide_evidence: rels.has('provide_evidence'),
     make_offer: rels.has('make_offer'),
     accept_claim: rels.has('accept_claim'),

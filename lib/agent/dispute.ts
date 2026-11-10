@@ -83,7 +83,9 @@ Each purchase an agent makes is bound by a "mandate": rules the buyer approved i
 Your job for one PayPal dispute:
 1. Investigate with the tools: read the dispute and the buyer's message, find the purchase and mandate behind the transaction, verify the mandate, check the purchase against it, and look at tracking and the shopping agent's decision trail.
 2. Call get_verdict. The verdict and, for mandate cases, the action are decided by deterministic code. Do not argue with them.
-3. Call record_recommendation exactly once, then stop.
+3. Call record_recommendation, then stop. If it is rejected, read the reason and call it again.
+
+How FIGHT is carried out (so you can write the right note): if PayPal allows provide_evidence, the note and an evidence PDF are uploaded directly. If the dispute is still an INQUIRY without provide_evidence, Vouch sends the note and PDF to the buyer as a dispute message and escalates the case to PayPal for review, with the note as the escalation reason. Write response_to_paypal so it reads correctly to PayPal's reviewer in either case.
 
 Writing rules:
 - explanation: 2-4 plain sentences for the merchant: what the buyer claims, what the evidence shows, and why the action follows.
@@ -193,9 +195,10 @@ export async function runDisputeAgent(disputeId: string) {
       description: 'Record your final recommendation for the merchant to review. Call exactly once.',
       inputSchema: RecordInput,
       run: async (input) => {
-        if (verdict.action && input.action !== verdict.action) return `Rejected: the verdict requires action ${verdict.action}.`;
-        const can = { FIGHT: allowed.provide_evidence, OFFER: allowed.make_offer, ACCEPT: allowed.accept_claim }[input.action];
-        if (!can) return `Rejected: PayPal does not currently allow ${input.action} on this dispute.`;
+        if (verdict.action && input.action !== verdict.action)
+          return `Rejected: the verdict requires action ${verdict.action}. Call record_recommendation again with that action.`;
+        const can = { FIGHT: allowed.fight, OFFER: allowed.make_offer, ACCEPT: allowed.accept_claim }[input.action];
+        if (!can) return `Rejected: PayPal does not currently allow ${input.action} on this dispute. Call record_recommendation again with an allowed action.`;
         recorded = input;
         await log(disputeId, ++step, { tool: 'record_recommendation', input });
         return 'Recorded.';

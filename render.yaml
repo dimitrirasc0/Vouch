@@ -1,0 +1,36 @@
+# Render Blueprint for Vouch: one Node web service (Next.js) using an existing Render Postgres.
+# Secrets are marked sync: false, so Render asks for them when the Blueprint is created; none are
+# stored in this repo.
+services:
+  - type: web
+    name: vouch
+    runtime: node
+    region: virginia # same region as the Postgres database
+    plan: starter # always on: webhooks and judges never hit a cold start
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      # Render Postgres "Internal Database URL" (same region, no public hop).
+      - key: DATABASE_URL
+        sync: false
+      - key: PAYPAL_CLIENT_ID
+        sync: false
+      - key: PAYPAL_CLIENT_SECRET
+        sync: false
+      # Webhook id registered for https://<this-service>.onrender.com/api/webhooks/paypal
+      - key: PAYPAL_WEBHOOK_ID
+        sync: false
+      # Read at build time by the PayPal JS SDK button (same value as PAYPAL_CLIENT_ID).
+      - key: NEXT_PUBLIC_PAYPAL_CLIENT_ID
+        sync: false
+      - key: PAYPAL_BUYER_EMAIL
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: MANDATE_SIGNING_SECRET
+        sync: false
+      - key: AG_STUDIO
+        sync: false

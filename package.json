@@ -10,7 +10,8 @@
     "pp:check": "node --env-file=.env scripts/check-paypal.mjs",
     "pp:pay": "node --env-file=.env scripts/create-payment.mjs",
     "pp:dispute": "node --env-file=.env scripts/create-dispute.mjs",
-    "pp:webhook": "node --env-file=.env scripts/register-webhook.mjs"
+    "pp:webhook": "node --env-file=.env scripts/register-webhook.mjs",
+    "db:migrate": "node --env-file=.env scripts/migrate.mjs"
   },
   "dependencies": {
     "ag-grid-community": "36.2.0",
@@ -18,12 +19,14 @@
     "ag-studio": "3.0.0",
     "ag-studio-react": "3.0.0",
     "next": "16.3.6",
+    "pg": "^8.23.1",
     "react": "19.2.8",
     "react-dom": "19.2.8"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",

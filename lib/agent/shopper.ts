@@ -15,11 +15,6 @@ const SYSTEM = `You are a shopping agent buying one item for a shopper, under a 
 Process: search the catalog, shortlist candidates, call check_mandate on your top choice (and alternatives if it fails), buy exactly one item that passes with purchase, then call add_tracking for that purchase, then stop.
 Respect the shopper's soft preferences when choosing among items that pass. Before each tool call, say in one short sentence what you are doing and why. Finish with a two-sentence summary of what you bought and why.`;
 
-// Demo mode: an agent that ignores its mandate, to show what Vouch does when a purchase oversteps.
-const OVERSTEP_SYSTEM = `You are a careless shopping agent in a clearly labelled DEMO of a misbehaving agent.
-Pick the charger with the fastest delivery, whatever it costs. Do NOT call check_mandate. Buy it with purchase, then call add_tracking, then stop.
-Before each tool call, say in one short sentence what you are doing. Finish with a one-sentence summary.`;
-
 export async function runShopper(mandateId: string, { overstep = false } = {}) {
   const m = await getMandate(mandateId);
   if (!m) throw new Error('Mandate not found');
@@ -44,7 +39,20 @@ export async function runShopper(mandateId: string, { overstep = false } = {}) {
     return JSON.stringify(output);
   };
 
-  if (overstep) await log({ reasoning: 'DEMO MODE: overstep=true. This run deliberately skips mandate enforcement to show how Vouch handles an out-of-mandate purchase.' });
+  if (overstep) {
+    // Claude declines to break a mandate even when told to, so the misbehaving agent is simulated
+    // by a fixed script (no model): a buggy third-party agent that buys a "close enough" item.
+    await log({ reasoning: 'DEMO MODE: simulated misbehaving agent (scripted, not Claude). It skips the mandate check entirely, the way a buggy third-party shopping agent might.' });
+    const hits = catalog.filter((i) => /usb-c|charg|power/i.test(`${i.name} ${i.category}`));
+    await log({ tool: 'search_catalog', input: { query: 'usb-c charging' }, output: hits });
+    const pick = findItem('pwr-bank-20k')!;
+    await log({ reasoning: `Picked "${pick.name}" ($${pick.price.toFixed(2)}) because it charges over USB-C. Skipping check_mandate.` });
+    const { purchase: p, check, captureStatus } = await purchase(m.id, pick.id, { overstep: true });
+    await log({ tool: 'purchase', input: { item_id: pick.id }, output: { purchase_id: p.id, item: p.item_name, amount: p.amount, paypal_capture_id: p.capture_id, paypal_status: captureStatus, in_mandate: check.pass, mandate_check_it_skipped: check } });
+    const t = await addTracking(p.id);
+    await log({ tool: 'add_tracking', input: { purchase_id: p.id }, output: { carrier: t?.carrier, tracking_number: t?.tracking_number } });
+    return { purchase: t ?? p, summary: `Scripted agent bought ${p.item_name} without checking the mandate.`, usage: { input: 0, output: 0 } };
+  }
 
   const passed = new Set<string>();
   let bought: PurchaseRow | null = null;
@@ -78,8 +86,8 @@ export async function runShopper(mandateId: string, { overstep = false } = {}) {
       inputSchema: z.object({ item_id: z.string() }),
       run: logged('purchase', async ({ item_id }) => {
         if (bought) return { error: 'Already bought an item under this mandate.' };
-        if (!overstep && !passed.has(item_id)) return { refused: 'Call check_mandate for this item first; only items that pass can be bought.' };
-        const { purchase: p, check, captureStatus } = await purchase(m.id, item_id, { overstep });
+        if (!passed.has(item_id)) return { refused: 'Call check_mandate for this item first; only items that pass can be bought.' };
+        const { purchase: p, check, captureStatus } = await purchase(m.id, item_id);
         bought = p;
         return { purchase_id: p.id, item: p.item_name, amount: p.amount, paypal_capture_id: p.capture_id, paypal_status: captureStatus, in_mandate: check.pass };
       }),
@@ -100,7 +108,7 @@ export async function runShopper(mandateId: string, { overstep = false } = {}) {
     max_tokens: 16000,
     ...FALLBACK,
     output_config: { effort: 'low' },
-    system: overstep ? OVERSTEP_SYSTEM : SYSTEM,
+    system: SYSTEM,
     tools,
     max_iterations: 12,
     messages: [

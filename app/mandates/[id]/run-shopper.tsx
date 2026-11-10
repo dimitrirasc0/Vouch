@@ -37,7 +37,7 @@ export function RunShopper({ mandateId }: { mandateId: string }) {
         <span>
           <strong className="text-pp-warning">Demo: misbehaving agent (overstep)</strong>
           <br />
-          Skips mandate enforcement so you can see how Vouch handles a purchase outside the mandate.
+          Runs a scripted, non-AI agent that skips the mandate check (like a buggy third-party agent), so you can see how Vouch handles a purchase outside the mandate.
         </span>
       </label>
       <button onClick={run} disabled={busy} className="mt-4 rounded-full bg-pp-blue px-5 py-2 font-semibold text-white hover:bg-pp-blue-dark disabled:opacity-50">

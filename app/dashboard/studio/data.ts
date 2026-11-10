@@ -16,8 +16,17 @@ const CALENDAR_ID = 'calendar';
 // [id, name, format, hide?]
 type FieldSpec = [id: string, name: string, format: AgFormat, hide?: boolean];
 
+// Money is USD throughout, so currency fields get an explicit USD formatter ($1,234.50).
+const USD = { format: new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }) };
+
 const fields = (specs: FieldSpec[]): AgFieldDefinition[] =>
-  specs.map(([id, name, format, hide]) => ({ id, name, format, ...(hide && { hide }) }));
+  specs.map(([id, name, format, hide]) => ({
+    id,
+    name,
+    format,
+    ...(format === 'currencyFormat' && { formatOptions: USD }),
+    ...(hide && { hide }),
+  }));
 
 const manyToOne = (id: string, source: string, target: string): AgRelationDefinition => {
   const [sourceTable, sourceField] = source.split('.');
@@ -137,7 +146,7 @@ export function buildStudioData(data: VouchDashboardData): AgDataSourcesDefiniti
       },
     ],
     expressions: [
-      ratio('winRate', 'Win Rate', 'Disputes won / disputes decided.', 'disputes.wonCount', 'disputes.decided'),
+      ratio('winRate', 'Win Rate', 'Disputes won / disputes Vouch fought that PayPal has decided. Honest refunds are not losses.', 'disputes.wonCount', 'disputes.decided'),
       ratio('mandateMatchRate', 'Mandate Match Rate', 'Share of disputes whose purchase satisfied its mandate.', 'disputes.inMandate', 'disputes.disputeCount'),
       ratio('mandateCoverage', 'Mandate Coverage', 'Share of disputes backed by an agent mandate.', 'disputes.mandateBacked', 'disputes.disputeCount'),
     ],

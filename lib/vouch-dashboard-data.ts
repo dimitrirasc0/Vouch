@@ -53,7 +53,8 @@ export async function getVouchDashboardData(asOf = new Date()) {
       atRisk: open && !lost ? amount : 0,
       recovered: won ? amount : 0,
       refunded: lost ? amount : 0,
-      decided: won || lost ? 1 : 0,
+      // Win rate only counts disputes Vouch fought; conceding an agent mistake is not a loss.
+      decided: d.action === 'FIGHT' && (won || d.outcome === 'RESOLVED_BUYER_FAVOUR') ? 1 : 0,
       wonCount: won ? 1 : 0,
       disputeCount: 1,
       mandateBacked: d.mandate_id ? 1 : 0,

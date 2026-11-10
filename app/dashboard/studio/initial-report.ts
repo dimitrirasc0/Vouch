@@ -47,7 +47,7 @@ const overview: AgPageState = {
     'kpi-refunded': kpi('Refunded (agent fault)', sum('disputes.refunded')),
     'kpi-open': kpi('Disputes', countd('disputes.id')),
     'mandate-match': gauge('Mandate match rate', 'mandateMatchRate', 'of disputed purchases were within mandate'),
-    'win-rate': gauge('Win rate', 'winRate', 'of decided disputes won'),
+    'win-rate': gauge('Win rate', 'winRate', 'of disputes Vouch fought were won'),
     'by-verdict': {
       type: 'column-chart-stacked',
       dataMapping: {

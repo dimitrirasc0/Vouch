@@ -39,8 +39,8 @@ export function latestRecommendation(disputeId: string) {
 
 // The access token lives in lib/paypal.ts; multipart calls need raw fetch, so borrow it via a GET.
 async function bearer(): Promise<string> {
-  const { PAYPAL_CLIENT_ID: id } = process.env;
-  const secret = process.env.PAYPAL_CLIENT_SECRET ?? process.env.PAYPAL_SECRET;
+  const id = process.env.PAYPAL_CLIENT_ID?.trim();
+  const secret = (process.env.PAYPAL_CLIENT_SECRET ?? process.env.PAYPAL_SECRET)?.trim();
   const res = await fetch(`${BASE}/v1/oauth2/token`, {
     method: 'POST',
     headers: { Authorization: `Basic ${Buffer.from(`${id}:${secret}`).toString('base64')}`, 'Content-Type': 'application/x-www-form-urlencoded' },

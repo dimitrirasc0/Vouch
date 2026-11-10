@@ -27,7 +27,7 @@ async function maybeInvestigate(id: string, status: string | null) {
 type WebhookEvent ={ id?: string; event_type?: string; resource?: { dispute_id?: string } };
 
 async function verify(req: Request, event: WebhookEvent): Promise<string> {
-  const webhookId = process.env.PAYPAL_WEBHOOK_ID;
+  const webhookId = process.env.PAYPAL_WEBHOOK_ID?.trim();
   if (!webhookId) return 'SKIPPED (no PAYPAL_WEBHOOK_ID)';
   const h = (n: string) => req.headers.get(n);
   try {

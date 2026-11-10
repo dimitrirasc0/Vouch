@@ -42,7 +42,7 @@ export function hashRules(rules: MandateRules): string {
 }
 
 function secret(): string {
-  const s = process.env.MANDATE_SIGNING_SECRET;
+  const s = process.env.MANDATE_SIGNING_SECRET?.trim();
   if (!s) throw new Error('MANDATE_SIGNING_SECRET must be set (see .env)');
   return s;
 }

@@ -37,7 +37,7 @@ function countdown(days: number | null) {
 }
 
 function DeadlineRadar(props: AgWidgetParams) {
-  const { dataMapping, widgetApi, format } = props;
+  const { dataMapping, widgetApi } = props;
   const m = dataMapping as Partial<Record<keyof Mapping, AgWidgetField[]>>;
   const fields = { item: m.item?.[0], badge: m.badge?.[0], daysLeft: m.daysLeft?.[0], amount: m.amount?.[0] };
   const [rows, setRows] = useState<Record<string, unknown>[] | null>(null);
@@ -56,7 +56,6 @@ function DeadlineRadar(props: AgWidgetParams) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, widgetApi]);
 
-  const title = (format as RadarWidget['format'])?.title;
   const cards = (rows ?? [])
     .map((r) => {
       const days = read(r, fields.daysLeft);
@@ -72,9 +71,7 @@ function DeadlineRadar(props: AgWidgetParams) {
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', fontFamily: 'var(--pp-font)', padding: 12, boxSizing: 'border-box' }}>
-      {title?.enabled !== false && (
-        <div style={{ fontWeight: 700, fontSize: 14, color: '#001c64', marginBottom: 10 }}>{title?.text ?? 'Dispute deadline radar'}</div>
-      )}
+      {/* The title is drawn by AG Studio's widget chrome (format.title), not here. */}
       {!fields.item && <div style={{ color: '#545d68', fontSize: 13 }}>Map a field to “Dispute” to show cards.</div>}
       {error && <div style={{ color: '#c4122f', fontSize: 13 }}>{error}</div>}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: 10, overflow: 'auto' }}>

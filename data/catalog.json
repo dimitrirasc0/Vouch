@@ -1,0 +1,12 @@
+[
+  { "id": "chg-voltleaf-65", "name": "VoltLeaf 65W USB-C Charger", "category": "usb-c-charger", "price": 27.99, "currency": "USD", "deliveryDays": 2 },
+  { "id": "chg-kestrel-45", "name": "Kestrel 45W USB-C Wall Charger", "category": "usb-c-charger", "price": 19.99, "currency": "USD", "deliveryDays": 3 },
+  { "id": "chg-generic-20", "name": "Basics 20W USB-C Charger", "category": "usb-c-charger", "price": 9.49, "currency": "USD", "deliveryDays": 6 },
+  { "id": "chg-northwind-100", "name": "Northwind Pro 100W GaN Charger", "category": "usb-c-charger", "price": 54.99, "currency": "USD", "deliveryDays": 2 },
+  { "id": "chg-duo-35", "name": "Dual USB-C Port 35W Compact Charger", "category": "usb-c-charger", "price": 34.0, "currency": "USD", "deliveryDays": 1 },
+  { "id": "cbl-usbc-2m", "name": "Braided USB-C to USB-C Cable, 2 m", "category": "usb-c-cable", "price": 12.99, "currency": "USD", "deliveryDays": 2 },
+  { "id": "pwr-bank-20k", "name": "20,000 mAh USB-C Power Bank", "category": "power-bank", "price": 29.99, "currency": "USD", "deliveryDays": 3 },
+  { "id": "hub-usbc-7in1", "name": "7-in-1 USB-C Hub", "category": "usb-c-hub", "price": 24.5, "currency": "USD", "deliveryDays": 4 },
+  { "id": "ear-wireless", "name": "Wireless Earbuds with Charging Case", "category": "headphones", "price": 29.0, "currency": "USD", "deliveryDays": 2 },
+  { "id": "case-phone", "name": "Clear Phone Case", "category": "phone-case", "price": 14.99, "currency": "USD", "deliveryDays": 5 }
+]

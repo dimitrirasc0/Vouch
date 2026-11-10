@@ -1,38 +1,90 @@
 import Link from 'next/link';
+import { connection } from 'next/server';
+import { query } from '@/lib/db';
+import { SyncButton } from './sync-button';
 
-const dashboard = { href: '/dashboard', label: 'Dashboard', detail: 'AG Studio reports over all of the data below' };
+export const metadata = { title: 'Vouch' };
 
-// One page per PayPal endpoint the demo calls, each in app/(endpoints).
-const endpoints = [
-  { href: '/products', label: 'Catalog products', detail: 'GET /v1/catalogs/products' },
-  { href: '/plans', label: 'Billing plans', detail: 'GET /v1/billing/plans' },
-  { href: '/invoices', label: 'Invoices', detail: 'GET /v2/invoicing/invoices' },
-  { href: '/transactions', label: 'Transactions', detail: 'GET /v1/reporting/transactions' },
-  { href: '/balances', label: 'Balances', detail: 'GET /v1/reporting/balances' },
-];
+type Row = {
+  id: string;
+  reason: string | null;
+  status: string | null;
+  amount: string | null;
+  outcome: string | null;
+  verdict: string | null;
+  action: string | null;
+  confidence: string | null;
+  submitted_at: string | null;
+};
 
-function PageLink({ href, label, detail }: { href: string; label: string; detail: string }) {
-  return (
-    <li>
-      <Link href={href} className="flex items-baseline justify-between gap-4 py-3 hover:text-pp-blue">
-        <span className="font-semibold">{label} →</span>
-        <code className="text-sm text-pp-muted">{detail}</code>
-      </Link>
-    </li>
+const REASON: Record<string, string> = {
+  MERCHANDISE_OR_SERVICE_NOT_RECEIVED: 'Not received',
+  MERCHANDISE_OR_SERVICE_NOT_AS_DESCRIBED: 'Not as described',
+};
+const VERDICT: Record<string, string> = { IN_MANDATE: 'text-pp-success', OUT_OF_MANDATE: 'text-pp-danger', UNKNOWN: 'text-pp-warning' };
+
+export default async function Home() {
+  await connection();
+  const disputes = await query<Row>(`
+    SELECT d.id, d.reason, d.status, d.amount, d.outcome, r.verdict, r.action, r.confidence, r.submitted_at
+    FROM disputes d
+    LEFT JOIN LATERAL (SELECT * FROM recommendations WHERE dispute_id = d.id ORDER BY created_at DESC LIMIT 1) r ON true
+    ORDER BY d.created_at DESC NULLS LAST`);
+  const mandates = await query<{ id: string; summary: string; status: string }>(
+    `SELECT id, summary, status FROM mandates WHERE status <> 'DRAFT' ORDER BY created_at DESC LIMIT 10`,
   );
-}
 
-export default function Home() {
   return (
-    <main className="mx-auto w-full max-w-3xl p-16 font-paypal text-pp-ink">
-      <h1 className="text-[28px] font-semibold text-pp-navy">PayPal REST APIs with AG Grid &amp; AG Studio</h1>
-      <ul className="mt-6 divide-y divide-pp-border border-y border-pp-border">
-        <PageLink {...dashboard} />
+    <main className="mx-auto w-full max-w-4xl px-4 py-12 font-paypal text-pp-ink sm:px-8">
+      <p className="text-sm font-semibold uppercase tracking-wider text-pp-blue">Vouch</p>
+      <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-[28px] font-semibold text-pp-navy">Disputes</h1>
+        <div className="flex items-center gap-3">
+          <SyncButton />
+          <Link href="/mandates/new" className="rounded-full bg-pp-blue px-4 py-2 text-sm font-semibold text-white hover:bg-pp-blue-dark">
+            New mandate
+          </Link>
+        </div>
+      </div>
+
+      <ul className="mt-6 divide-y divide-pp-border rounded-xl border border-pp-border bg-pp-surface">
+        {disputes.length === 0 && <li className="p-4 text-sm text-pp-muted">No disputes yet.</li>}
+        {disputes.map((d) => (
+          <li key={d.id}>
+            <Link href={`/disputes/${d.id}`} className="flex flex-wrap items-center justify-between gap-3 p-4 hover:bg-pp-highlight">
+              <div>
+                <p className="font-semibold">
+                  {REASON[d.reason ?? ''] ?? d.reason} · ${Number(d.amount).toFixed(2)}
+                </p>
+                <p className="text-xs text-pp-muted">
+                  {d.id} · {d.outcome ? `resolved: ${d.outcome.toLowerCase().replaceAll('_', ' ')}` : d.status?.toLowerCase().replaceAll('_', ' ')}
+                </p>
+              </div>
+              <p className="text-sm">
+                {d.verdict ? (
+                  <>
+                    <span className={`font-semibold ${VERDICT[d.verdict]}`}>{d.verdict.replaceAll('_', ' ').toLowerCase()}</span>
+                    <span className="text-pp-muted">
+                      {' '}
+                      → {d.action?.toLowerCase()} {d.confidence && `(${Math.round(Number(d.confidence) * 100)}%)`} {d.submitted_at ? '· submitted' : '· awaiting approval'}
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-pp-muted">not investigated</span>
+                )}
+              </p>
+            </Link>
+          </li>
+        ))}
       </ul>
-      <h2 className="mt-10 text-sm font-semibold uppercase tracking-wider text-pp-muted">Endpoints</h2>
-      <ul className="mt-2 divide-y divide-pp-border border-y border-pp-border">
-        {endpoints.map((page) => (
-          <PageLink key={page.href} {...page} />
+
+      <h2 className="mt-10 text-sm font-semibold uppercase tracking-wider text-pp-muted">Mandates</h2>
+      <ul className="mt-2 divide-y divide-pp-border rounded-xl border border-pp-border bg-pp-surface text-sm">
+        {mandates.map((m) => (
+          <li key={m.id} className="flex justify-between gap-3 p-3">
+            <span>{m.summary}</span>
+            <span className="text-pp-muted">{m.status.toLowerCase()}</span>
+          </li>
         ))}
       </ul>
     </main>

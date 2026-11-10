@@ -98,7 +98,11 @@ export async function evidencePdf(rec: RecommendationRow, note: string) {
 export async function submitRecommendation(disputeId: string, opts: { note?: string; offerAmount?: number } = {}) {
   const rec = await latestRecommendation(disputeId);
   if (!rec) throw new Error('No recommendation to submit');
-  if (rec.submitted_at) throw new Error('Already submitted');
+  const prior = (rec.result as { body?: { step: string; ok: boolean }[] } | null)?.body;
+  const evidenceDone = Array.isArray(prior) && prior.some((s) => s.step === 'provide_evidence' && s.ok);
+  // A FIGHT that escalated an inquiry may continue once PayPal opens provide_evidence on the claim.
+  const followUp = rec.submitted_at && rec.action === 'FIGHT' && !evidenceDone;
+  if (rec.submitted_at && !followUp) throw new Error('Already submitted');
   const note = (opts.note ?? rec.draft ?? '').slice(0, 2000);
   if (!note.trim()) throw new Error('Response note is empty');
 
@@ -113,6 +117,7 @@ export async function submitRecommendation(disputeId: string, opts: { note?: str
     const pdf = await evidencePdf(rec, note);
     const steps: { step: string; ok: boolean; status: number; body: unknown; debugId: string | null }[] = [];
     let evidenceAllowed = can.provide_evidence;
+    let current = dispute;
 
     if (!evidenceAllowed && dispute.stage === 'INQUIRY') {
       // 1. Put the evidence on the case record as a message to the buyer (best effort).
@@ -130,22 +135,30 @@ export async function submitRecommendation(disputeId: string, opts: { note?: str
         esc = await call(`/v1/customer/disputes/${disputeId}/escalate`, { note });
       }
       steps.push({ step: 'escalate', ...esc });
-      const after = await refreshDispute(disputeId);
-      evidenceAllowed = allowedActions(after.raw).provide_evidence;
+      current = await refreshDispute(disputeId);
+      evidenceAllowed = allowedActions(current.raw).provide_evidence;
     }
 
     if (evidenceAllowed) {
+      // Send the evidence type PayPal asks the seller for (it rejects others with
+      // EVIDENCE_TYPE_IS_NOT_ALLOWED). Tracking only fits PROOF_OF_FULFILLMENT; otherwise it's in the notes/PDF.
+      const requested = ((current.raw.evidences as { evidence_type: string; source?: string }[] | undefined) ?? [])
+        .filter((e) => e.source === 'REQUESTED_FROM_SELLER')
+        .map((e) => e.evidence_type);
+      const type = requested.includes('PROOF_OF_FULFILLMENT') ? 'PROOF_OF_FULFILLMENT' : requested.includes('OTHER') || !requested.length ? 'OTHER' : requested.find((t) => t !== 'PROOF_OF_REFUND') ?? 'OTHER';
       const tracking = rec.evidence?.tracking;
-      const evidence: Record<string, unknown> = { evidence_type: 'PROOF_OF_FULFILLMENT', notes: note };
-      if (tracking?.number) evidence.evidence_info = { tracking_info: [{ carrier_name: tracking.carrier ?? 'OTHER', tracking_number: tracking.number }] };
+      const evidence: Record<string, unknown> = { evidence_type: type, notes: note };
+      if (type === 'PROOF_OF_FULFILLMENT' && tracking?.number)
+        evidence.evidence_info = { tracking_info: [{ carrier_name: tracking.carrier ?? 'OTHER', tracking_number: tracking.number }] };
       if (pdf) evidence.documents = [{ name: 'vouch_mandate_record.pdf' }];
       const form = new FormData();
       form.append('input', new Blob([JSON.stringify({ evidences: [evidence] })], { type: 'application/json' }));
       if (pdf) form.append('file1', new Blob([Buffer.from(pdf)], { type: 'application/pdf' }), 'vouch_mandate_record.pdf');
       steps.push({ step: 'provide_evidence', ...(await call(`/v1/customer/disputes/${disputeId}/provide-evidence`, form)) });
     }
+    const allSteps = [...(followUp && Array.isArray(prior) ? (prior as typeof steps) : []), ...steps];
     const decisive = steps.filter((s) => s.step !== 'send_message');
-    result = { ok: decisive.length > 0 && decisive.every((s) => s.ok), status: decisive.at(-1)?.status ?? 0, body: steps, debugId: null };
+    result = { ok: decisive.length > 0 && decisive.every((s) => s.ok), status: decisive.at(-1)?.status ?? 0, body: allSteps, debugId: null };
   } else if (rec.action === 'OFFER') {
     if (!can.make_offer) throw new Error('PayPal does not currently allow an offer on this dispute');
     const value = (opts.offerAmount ?? Number(rec.offer_amount ?? amount)).toFixed(2);
@@ -160,7 +173,7 @@ export async function submitRecommendation(disputeId: string, opts: { note?: str
   }
 
   await query(
-    `UPDATE recommendations SET approved_at = now(), submitted_at = CASE WHEN $2 THEN now() ELSE NULL END, result = $3, draft = $4 WHERE id = $1`,
+    `UPDATE recommendations SET approved_at = now(), submitted_at = CASE WHEN $2 THEN now() ELSE submitted_at END, result = $3, draft = $4 WHERE id = $1`,
     [rec.id, result.ok, JSON.stringify(result), note],
   );
   if (result.ok) await refreshDispute(disputeId).catch(() => {});

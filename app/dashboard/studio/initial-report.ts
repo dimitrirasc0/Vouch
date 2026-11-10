@@ -42,6 +42,16 @@ const gauge = (text: string, id: string, caption: string) => ({
 const overview: AgPageState = {
   id: 'overview',
   widgets: {
+    'deadline-radar': {
+      type: 'vouch-deadline-radar',
+      dataMapping: {
+        item: [{ id: 'disputes.id' }],
+        badge: [{ id: 'disputes.verdict' }],
+        daysLeft: [{ id: 'disputes.daysLeft' }],
+        amount: [sum('disputes.atRisk')],
+      },
+      format: title('Dispute deadline radar'),
+    } as unknown as AgPageState['widgets'] extends Record<string, infer W> ? W : never,
     'kpi-at-risk': kpi('Money at risk', sum('disputes.atRisk')),
     'kpi-recovered': kpi('Recovered', sum('disputes.recovered')),
     'kpi-refunded': kpi('Refunded (agent fault)', sum('disputes.refunded')),
@@ -93,6 +103,7 @@ const overview: AgPageState = {
     'win-rate': at(18, 7, 6, 17),
     'dispute-grid': at(0, 24, 16, 20),
     'by-reason': at(16, 24, 8, 20),
+    'deadline-radar': at(0, 44, 24, 14),
   },
 };
 

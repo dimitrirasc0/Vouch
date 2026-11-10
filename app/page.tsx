@@ -41,6 +41,9 @@ export default async function Home() {
         <h1 className="text-[28px] font-semibold text-pp-navy">Disputes</h1>
         <div className="flex items-center gap-3">
           <SyncButton />
+          <Link href="/dashboard" className="rounded-full border border-pp-border px-4 py-2 text-sm font-semibold text-pp-navy hover:bg-pp-highlight">
+            Dashboard
+          </Link>
           <Link href="/mandates/new" className="rounded-full bg-pp-blue px-4 py-2 text-sm font-semibold text-white hover:bg-pp-blue-dark">
             New mandate
           </Link>

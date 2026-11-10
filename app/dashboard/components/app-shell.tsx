@@ -19,7 +19,11 @@ function PayPalWordmark({ className = '' }: { className?: string }) {
 function BrandLockup() {
   return (
     <div className="flex items-center gap-3">
-      <AgStudioLogo className="-ml-3 h-12 w-auto" />
+      <a href="/" className="text-xl font-bold tracking-tight text-pp-navy">
+        Vouch
+      </a>
+      <span className="h-6 w-px bg-pp-border" aria-hidden />
+      <AgStudioLogo className="-ml-1 h-10 w-auto" />
       <span className="h-6 w-px bg-pp-border" aria-hidden />
       <span className="flex items-baseline gap-1 text-xs text-pp-muted">
         powered by <PayPalWordmark className="text-base" /> APIs

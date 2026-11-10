@@ -19,7 +19,7 @@ import {
   type AgStudioMode,
 } from 'ag-studio';
 import { AgStudio, AgStudioProvider } from 'ag-studio-react';
-import type { DashboardData } from '@/lib/dashboard-data';
+import type { VouchDashboardData as DashboardData } from '@/lib/vouch-dashboard-data';
 import { AppShell } from './components/app-shell';
 import {
   CreateReportDialog,

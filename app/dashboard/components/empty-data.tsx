@@ -7,9 +7,9 @@ export function EmptyData() {
       <span className="flex size-14 items-center justify-center rounded-full bg-pp-highlight text-pp-blue">
         <InboxIcon className="size-7" />
       </span>
-      <h2 className="mt-4 text-xl font-semibold text-pp-navy">No PayPal data yet</h2>
+      <h2 className="mt-4 text-xl font-semibold text-pp-navy">No disputes or mandates yet</h2>
       <p className="mt-2 max-w-md text-[15px] text-pp-muted">
-        This sandbox account has no invoices, products, plans or transactions. Create some in the PayPal sandbox, then
+        Create a mandate and let an agent buy something, or sync disputes from the PayPal sandbox, then
         refresh to build reports from them.
       </p>
       <a

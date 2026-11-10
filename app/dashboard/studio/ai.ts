@@ -1,8 +1,8 @@
-// The AG Studio AI assistant. The adapter calls `${endpoint}/responses`, i.e. this app's proxy at
-// app/api/ai/responses, which holds the OpenAI key, so nothing secret is sent from the browser.
+// The AG Studio AI assistant, running on Claude. The adapter posts to this app's /api/ai/claude
+// route, which holds the Anthropic key, so nothing secret is sent from the browser.
 
 import { createAiHarness, type AgAiHarnessSetup, type AgAiPromptStarter } from 'ag-studio';
-import { openaiAdapter } from './openai-adapter';
+import { claudeAdapter } from './claude-adapter';
 
 // Suggestions shown in a new AI conversation, before anything has been typed.
 const PROMPT_STARTERS: AgAiPromptStarter[] = [
@@ -11,19 +11,18 @@ const PROMPT_STARTERS: AgAiPromptStarter[] = [
     prompt: 'Summarise what this page shows: every widget, the fields it reads, and what stands out.',
   },
   {
-    label: 'Overdue invoices',
-    prompt: 'Which customers owe the most on overdue invoices?',
+    label: 'Where is money at risk?',
+    prompt: 'Which open disputes put the most money at risk, and what did the agent recommend for each?',
   },
   {
-    label: 'Revenue by month',
-    prompt: 'Add a chart of paid invoice revenue by month.',
+    label: 'Chart agent mistakes',
+    prompt: 'Add a chart comparing agent spend within vs outside the mandate, by item.',
   },
 ];
 
-// `models` are the ids allowed by OPENAI_MODELS on the server; the first is the default, and the
-// picker only shows for two or more.
+// `models` are the Claude model ids allowed on the server (lib/ai.ts); the picker shows for two or more.
 export function buildAi(models: string[]): AgAiHarnessSetup {
-  const adapter = openaiAdapter({ endpoint: '/api/ai', model: models[0] });
+  const adapter = claudeAdapter();
 
   return ({ api }) =>
     createAiHarness(api, {

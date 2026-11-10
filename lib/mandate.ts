@@ -82,7 +82,8 @@ export function verifyMandate(
 export function summarize(r: MandateRules): string {
   const money = new Intl.NumberFormat('en-US', { style: 'currency', currency: r.currency }).format(r.maxAmount);
   const day = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
-  const parts = [`Vouch mandate: ${r.category.replace(/-/g, ' ')}`, `max ${money}`, `expires ${day(r.expiresAt)}`];
+  const label = r.category.replace(/usb-c/gi, 'USB-C').replace(/(?<!USB)-/g, ' ');
+  const parts = [`Vouch mandate: ${label}`, `max ${money}`, `expires ${day(r.expiresAt)}`];
   if (r.deliverBy) parts.push(`arrive by ${day(r.deliverBy)}`);
   return parts.join(', ').slice(0, 127);
 }

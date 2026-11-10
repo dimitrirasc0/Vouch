@@ -122,8 +122,14 @@ export async function submitRecommendation(disputeId: string, opts: { note?: str
         if (pdf) form.append('message_document', new Blob([Buffer.from(pdf)], { type: 'application/pdf' }), 'vouch_mandate_record.pdf');
         steps.push({ step: 'send_message', ...(await call(`/v1/customer/disputes/${disputeId}/send-message`, form)) });
       }
-      // 2. Escalate the inquiry to a PayPal claim, with the case summary as the reason.
-      steps.push({ step: 'escalate', ...(await call(`/v1/customer/disputes/${disputeId}/escalate`, { note })) });
+      // 2. Escalate the inquiry to a PayPal claim, with the case summary as the reason. Right after a
+      //    message PayPal briefly reports ACTION_NOT_ALLOWED_IN_CURRENT_DISPUTE_STATE, so retry.
+      let esc = await call(`/v1/customer/disputes/${disputeId}/escalate`, { note });
+      for (let i = 0; !esc.ok && esc.status === 422 && i < 5; i++) {
+        await new Promise((r) => setTimeout(r, 4000));
+        esc = await call(`/v1/customer/disputes/${disputeId}/escalate`, { note });
+      }
+      steps.push({ step: 'escalate', ...esc });
       const after = await refreshDispute(disputeId);
       evidenceAllowed = allowedActions(after.raw).provide_evidence;
     }

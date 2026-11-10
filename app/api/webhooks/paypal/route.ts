@@ -3,11 +3,28 @@
 // instead of trusting the payload snapshot.
 
 import { after } from 'next/server';
+import { runDisputeAgent } from '@/lib/agent/dispute';
 import { query } from '@/lib/db';
 import { refreshDispute } from '@/lib/disputes';
 import { paypalPost } from '@/lib/paypal';
 
-type WebhookEvent = { id?: string; event_type?: string; resource?: { dispute_id?: string } };
+// Start the dispute agent once PayPal lets the seller respond, unless it already investigated.
+const running = new Set<string>();
+async function maybeInvestigate(id: string, status: string | null) {
+  if (status !== 'WAITING_FOR_SELLER_RESPONSE' || running.has(id)) return;
+  if ((await query('SELECT 1 FROM recommendations WHERE dispute_id = $1 LIMIT 1', [id])).length) return;
+  running.add(id);
+  try {
+    const r = await runDisputeAgent(id);
+    console.log(`[dispute-agent] ${id}: ${r.verdict.verdict} -> ${r.recommendation.action}`);
+  } catch (err) {
+    console.error(`[dispute-agent] ${id} failed:`, (err as Error).message);
+  } finally {
+    running.delete(id);
+  }
+}
+
+type WebhookEvent ={ id?: string; event_type?: string; resource?: { dispute_id?: string } };
 
 async function verify(req: Request, event: WebhookEvent): Promise<string> {
   const webhookId = process.env.PAYPAL_WEBHOOK_ID;
@@ -58,7 +75,7 @@ export async function POST(req: Request) {
       try {
         const row = await refreshDispute(disputeId);
         console.log(`[webhook] dispute ${row.id} -> ${row.status}/${row.stage}`);
-        // Next step: on first sight of a dispute, start the dispute agent here.
+        await maybeInvestigate(row.id, row.status);
       } catch (err) {
         console.error(`[webhook] refresh ${disputeId} failed:`, (err as Error).message);
       }

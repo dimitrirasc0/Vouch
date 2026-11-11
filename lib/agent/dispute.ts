@@ -83,7 +83,7 @@ Each purchase an agent makes is bound by a "mandate": rules the buyer approved i
 Your job for one PayPal dispute:
 1. Investigate with the tools: read the dispute and the buyer's message, find the purchase and mandate behind the transaction, verify the mandate, check the purchase against it, and look at tracking and the shopping agent's decision trail.
 2. Call get_verdict. The verdict and, for mandate cases, the action are decided by deterministic code. Do not argue with them.
-3. Call record_recommendation, then stop. If it is rejected, read the reason and call it again.
+3. Call record_recommendation, then stop. If it is rejected, read the reason and call it again. Always record the verdict's action even if PayPal allows no seller action right now; the merchant submits later.
 
 How FIGHT is carried out (so you can write the right note): if PayPal allows provide_evidence, the note and an evidence PDF are uploaded directly. If the dispute is still an INQUIRY without provide_evidence, Vouch sends the note and PDF to the buyer as a dispute message and escalates the case to PayPal for review, with the note as the escalation reason. Write response_to_paypal so it reads correctly to PayPal's reviewer in either case.
 
@@ -198,10 +198,15 @@ export async function runDisputeAgent(disputeId: string) {
         if (verdict.action && input.action !== verdict.action)
           return `Rejected: the verdict requires action ${verdict.action}. Call record_recommendation again with that action.`;
         const can = { FIGHT: allowed.fight, OFFER: allowed.make_offer, ACCEPT: allowed.accept_claim }[input.action];
-        if (!can) return `Rejected: PayPal does not currently allow ${input.action} on this dispute. Call record_recommendation again with an allowed action.`;
+        const anyAllowed = allowed.fight || allowed.make_offer || allowed.accept_claim;
+        // For an UNKNOWN verdict, steer the choice to something PayPal accepts. A mandate verdict is
+        // always recorded: when PayPal allows nothing yet (e.g. a chargeback under review), the merchant
+        // still gets the recommendation and submits once PayPal opens the action.
+        if (!can && !verdict.action && anyAllowed)
+          return `Rejected: PayPal does not currently allow ${input.action} on this dispute. Call record_recommendation again with an allowed action.`;
         recorded = input;
         await log(disputeId, ++step, { tool: 'record_recommendation', input });
-        return 'Recorded.';
+        return can ? 'Recorded.' : `Recorded. Note: PayPal does not allow ${input.action} on this dispute right now (status ${d.status}), so the merchant will submit it once PayPal opens that action.`;
       },
     }),
   ];

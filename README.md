@@ -88,7 +88,56 @@ lib/evidence-pdf.ts       mandate evidence record (PDF)
 app/api/webhooks/paypal   verified webhook → dispute refresh → auto-investigation
 app/api/ai/claude         AG Studio LLM adapter on Claude (server side)
 app/dashboard             AG Studio dashboard (Vouch data sources + report)
+app/api/mcp               remote MCP server: any AI agent shops under a mandate (lib/mcp/server.ts)
 ```
+
+## Use Vouch from any AI agent (MCP)
+
+**Any AI agent can plug into Vouch and get spending limits the buyer approved in PayPal, plus dispute
+protection, without writing a line of payments code.**
+
+Vouch runs a remote [MCP](https://modelcontextprotocol.io) server (Streamable HTTP) inside the same
+app. Claude, ChatGPT, Cursor or any other MCP client can create a mandate, send the user to approve
+it in PayPal, and buy within it. Purchases made this way show up on the mandate page and dashboard
+marked **via MCP**, and a dispute on one is handled by Vouch's dispute agent like any other.
+
+- **Endpoint:** `https://vouch-7idi.onrender.com/api/mcp`
+- **Auth:** a shared key, sent as `Authorization: Bearer <key>`, or as `?key=<key>` for clients that
+  can't set headers. **Judges:** the key is in the Devpost submission's testing instructions.
+- **Sandbox:** everything runs on the PayPal sandbox. Approve mandates with the sandbox buyer login
+  from the testing instructions, not a real PayPal account.
+
+| Tool | What it does |
+|---|---|
+| `create_mandate({ instructions })` | Parses the plain-language request into hard rules and soft preferences (the same Claude parser as the web app) and returns the mandate id and an **approval URL**. Only the user can approve, in PayPal; the agent cannot. |
+| `get_mandate_status({ mandateId })` | Whether the user has approved yet, the rules, spending limit, expiry and what has been bought. |
+| `search_catalog({ query })` | Searches the demo store. |
+| `check_item_against_mandate({ mandateId, itemId })` | The deterministic mandate check: pass or fail with a reason for each rule. |
+| `purchase_within_mandate({ mandateId, itemId })` | Buys only if the mandate is approved and every rule passes: captures the item price from the PayPal hold (the rest is released) and adds tracking. Otherwise refuses and charges nothing. |
+
+Every call is written to the mandate's decision trail (agent `mcp`, with the client's name), which the
+dispute agent later cites as evidence.
+
+### Connect it to Claude
+
+1. In Claude (desktop or claude.ai): **Settings → Connectors → Add custom connector**.
+2. Name: `Vouch`. URL: `https://vouch-7idi.onrender.com/api/mcp?key=<key>&client=Claude`.
+   Claude connects from Anthropic's servers, so it needs the public URL, not localhost.
+3. In a new chat, enable the Vouch connector and ask: *"Use Vouch to buy me a USB-C charger under
+   $30 that arrives within 5 days."*
+4. Open the approval link Claude gives you, approve the hold with the sandbox buyer, then tell
+   Claude "approved". It checks the status, picks an item, checks it and buys.
+
+Other clients: point them at the same URL, or use the bare endpoint with an
+`Authorization: Bearer <key>` header. To test the tools directly:
+
+```bash
+npx @modelcontextprotocol/inspector --cli https://vouch-7idi.onrender.com/api/mcp \
+  --transport http --header "Authorization: Bearer <key>" --method tools/list
+```
+
+If the service has been idle on a free Render instance, the first connection can take up to a
+minute while it wakes up.
 
 ## Run it locally
 
@@ -115,6 +164,7 @@ npm run dev                  # http://localhost:3000
 | `ANTHROPIC_API_KEY` | console.anthropic.com |
 | `DATABASE_URL` | Any Postgres (we use Render Postgres) |
 | `MANDATE_SIGNING_SECRET` | Any random 32-byte hex string: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` |
+| `MCP_API_KEY` | Shared key for the MCP server at `/api/mcp` (any random string). Unset = the MCP server is off. |
 | `AG_STUDIO` | AG Studio licence key (optional locally; removes the licence warnings) |
 
 To receive webhooks locally, expose port 3000 (for example `cloudflared tunnel --url http://localhost:3000`)
@@ -154,11 +204,13 @@ sandbox webhooks.
 |---|---|
 | **Claude Opus 5.5** (Anthropic API) | Inside the product: turns natural-language mandates into rules (structured outputs with a Zod schema); runs the shopping agent and the dispute agent (SDK tool runner with typed tools, adaptive thinking, server-side refusal fallback); powers the AG Studio dashboard assistant through a custom adapter. |
 | **AG Studio AI assistant** | AG Studio's built-in agent framework, driven by Claude through our adapter (`app/dashboard/studio/claude-adapter.ts` + `app/api/ai/claude`), so merchants can query and edit the dashboard in plain language. |
+| **Model Context Protocol** (`@modelcontextprotocol/sdk`) | Vouch's own remote MCP server (`/api/mcp`), so external AI agents such as Claude, ChatGPT or Cursor can shop under a buyer-approved mandate. The tools wrap the same deterministic checks and PayPal calls as the built-in agent. |
 | **Claude Code** | Used as the development assistant to build Vouch: scaffolding, PayPal API integration, debugging sandbox behaviour against the official docs and OpenAPI spec, and writing this README. |
 
 Guardrails: the models never decide whether money moves. Mandate checks and dispute verdicts are
-deterministic code, the purchase tool refuses unchecked items, and every PayPal action that moves
-money requires the merchant's click.
+deterministic code, the purchase tools (built-in and MCP) refuse items that fail the mandate and can
+only capture from a hold the buyer approved in PayPal, and every dispute action that moves money
+requires the merchant's click.
 
 ## Credits and license
 

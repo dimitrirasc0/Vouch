@@ -14,6 +14,8 @@ type Row = {
   amount: string | null;
   in_mandate: boolean | null;
   dispute_id: string | null;
+  source: string | null;
+  source_client: string | null;
 };
 
 const STATUS: Record<string, { label: string; cls: string }> = {
@@ -25,7 +27,7 @@ const STATUS: Record<string, { label: string; cls: string }> = {
 export default async function MandatesPage() {
   await connection();
   const rows = await query<Row>(`
-    SELECT m.id, m.summary, m.status, m.approved_at, p.item_name, p.amount, p.in_mandate, d.id AS dispute_id
+    SELECT m.id, m.summary, m.status, m.approved_at, m.source, m.source_client, p.item_name, p.amount, p.in_mandate, d.id AS dispute_id
     FROM mandates m
     LEFT JOIN purchases p ON p.mandate_id = m.id
     LEFT JOIN disputes d ON d.seller_txn_id = p.capture_id
@@ -59,6 +61,9 @@ export default async function MandatesPage() {
                   </p>
                 </Link>
                 <div className="flex items-center gap-2">
+                  {m.source === 'mcp' && (
+                    <span className="rounded-full bg-pp-navy px-2.5 py-1 text-xs font-semibold text-white">via MCP{m.source_client ? ` · ${m.source_client}` : ''}</span>
+                  )}
                   <span className={`rounded-full px-3 py-1 text-xs font-semibold ${s.cls}`}>{s.label}</span>
                   {m.dispute_id && (
                     <Link href={`/disputes/${m.dispute_id}`} className="rounded-full bg-pp-danger/10 px-3 py-1 text-xs font-semibold text-pp-danger hover:underline">

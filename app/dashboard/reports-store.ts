@@ -18,7 +18,8 @@ export type SavedReport = {
 
 export type StoredReports = { reports: SavedReport[]; activeId: string };
 
-const STORAGE_KEY = 'vouch:reports:v1';
+// v2: the built-in report gained the "via MCP" columns; a new key shows it to returning visitors.
+const STORAGE_KEY = 'vouch:reports:v2';
 
 export const BUILT_IN_ID = 'vouch-overview';
 

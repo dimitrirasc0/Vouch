@@ -112,6 +112,7 @@ export function buildStudioData(data: VouchDashboardData): AgDataSourcesDefiniti
           ['expiresDate', 'Expires', 'dateFormat'],
           ['buyer', 'Buyer', 'textFormat'],
           ['signatureValid', 'Signature Valid', 'booleanFormat'],
+          ['placedVia', 'Created Via', 'textFormat'],
         ]),
       },
       {
@@ -127,6 +128,7 @@ export function buildStudioData(data: VouchDashboardData): AgDataSourcesDefiniti
           ['withinMandate', 'Mandate Check', 'textFormat'],
           ['date', 'Purchased', 'dateFormat'],
           ['tracked', 'Tracked', 'booleanFormat'],
+          ['placedVia', 'Bought Via', 'textFormat'],
           ['purchaseCount', 'Purchases', 'integerFormat'],
         ]),
       },

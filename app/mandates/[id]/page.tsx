@@ -30,8 +30,14 @@ export default async function Page({ params }: PageProps<'/mandates/[id]'>) {
   const v = verifyMandate(m, customId);
   const purchases = await query<PurchaseRow>('SELECT * FROM purchases WHERE mandate_id = $1 ORDER BY created_at', [m.id]);
   const trail = await query<{ id: string; step: number; tool: string | null; input: unknown; output: unknown; reasoning: string | null }>(
-    `SELECT id, step, tool, input, output, reasoning FROM agent_decisions WHERE mandate_id = $1 AND agent = 'shopper' ORDER BY id`,
+    `SELECT id, step, tool, input, output, reasoning FROM agent_decisions WHERE mandate_id = $1 AND agent IN ('shopper', 'mcp') ORDER BY id`,
     [m.id],
+  );
+  const viaMcp = m.source === 'mcp';
+  const mcpBadge = (
+    <span className="rounded-full bg-pp-navy px-2.5 py-0.5 text-xs font-semibold text-white" title="Created by an external AI agent through Vouch's MCP server">
+      via MCP{m.source_client ? ` · ${m.source_client}` : ''}
+    </span>
   );
   const badge = (ok: boolean | null, label: string) => (
     <span className={`rounded-full px-3 py-1 text-xs font-semibold ${ok === null ? 'bg-pp-canvas text-pp-muted' : ok ? 'bg-pp-success/10 text-pp-success' : 'bg-pp-danger/10 text-pp-danger'}`}>
@@ -47,6 +53,7 @@ export default async function Page({ params }: PageProps<'/mandates/[id]'>) {
         ← Vouch
       </Link>
       <h1 className="mt-3 text-[26px] font-semibold text-pp-navy">{m.summary}</h1>
+      {viaMcp && <div className="mt-2">{mcpBadge}</div>}
       <p className="mt-1 text-sm text-pp-muted">
         {m.id} · {m.status.toLowerCase()} · approved {fmt(m.approved_at)} by {m.buyer_email ?? '-'}
       </p>
@@ -90,6 +97,7 @@ export default async function Page({ params }: PageProps<'/mandates/[id]'>) {
             <h2 className="font-semibold text-pp-navy">
               Bought: {p.item_name} · ${Number(p.amount).toFixed(2)}
             </h2>
+            {p.source === 'mcp' && mcpBadge}
             <span className={`rounded-full px-3 py-1 text-xs font-semibold ${p.in_mandate ? 'bg-pp-success/10 text-pp-success' : 'bg-pp-danger/10 text-pp-danger'}`}>
               {p.in_mandate ? 'Within mandate' : 'Outside mandate'}
             </span>
@@ -101,11 +109,18 @@ export default async function Page({ params }: PageProps<'/mandates/[id]'>) {
         </section>
       ))}
 
-      {m.status === 'AUTHORIZED' && <RunShopper mandateId={m.id} />}
+      {m.status === 'AUTHORIZED' &&
+        (viaMcp ? (
+          <p className="mt-6 rounded-xl border border-pp-border bg-pp-surface p-5 text-sm text-pp-muted">
+            Approved. Waiting for {m.source_client ?? 'the external agent'} to buy through Vouch&apos;s MCP server.
+          </p>
+        ) : (
+          <RunShopper mandateId={m.id} />
+        ))}
 
       {trail.length > 0 && (
         <section className="mt-6 rounded-xl border border-pp-border bg-pp-surface p-5">
-          <h2 className="font-semibold text-pp-navy">Shopping agent decision trail</h2>
+          <h2 className="font-semibold text-pp-navy">{viaMcp ? 'External agent decision trail (MCP tool calls)' : 'Shopping agent decision trail'}</h2>
           <ol className="mt-3 space-y-3 text-sm">
             {trail.map((s) => (
               <li key={s.id}>

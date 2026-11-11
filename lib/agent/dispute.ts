@@ -174,11 +174,11 @@ export async function runDisputeAgent(disputeId: string) {
     }),
     betaZodTool({
       name: 'get_decision_trail',
-      description: "The shopping agent's logged steps when it made this purchase.",
+      description: "The shopping agent's logged steps when it made this purchase. Rows with agent 'mcp' are tool calls an external AI agent made through Vouch's MCP server.",
       inputSchema: z.object({ mandate_id: z.string() }),
       run: logged('get_decision_trail', async ({ mandate_id }) => {
         const rows = await query<{ step: number; tool: string | null; reasoning: string | null; output: unknown }>(
-          `SELECT step, tool, reasoning, output FROM agent_decisions WHERE mandate_id = $1 AND agent = 'shopper' ORDER BY step`,
+          `SELECT step, tool, reasoning, output, agent FROM agent_decisions WHERE mandate_id = $1 AND agent IN ('shopper', 'mcp') ORDER BY step`,
           [mandate_id],
         );
         return rows.length ? rows : { note: 'No shopping-agent trail recorded (purchase was made directly).' };

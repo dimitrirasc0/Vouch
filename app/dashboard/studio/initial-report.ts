@@ -135,6 +135,7 @@ const mandates: AgPageState = {
           { id: 'mandates.expiresDate' },
           { id: 'mandates.signatureValid' },
           { id: 'mandates.buyer' },
+          { id: 'mandates.placedVia' },
         ],
       },
       format: title('Mandates and signature verification'),
@@ -142,7 +143,7 @@ const mandates: AgPageState = {
     'purchase-grid': {
       type: 'grid',
       dataMapping: {
-        cols: [{ id: 'purchases.date' }, { id: 'purchases.item' }, { id: 'purchases.category' }, sum('purchases.amount'), { id: 'purchases.withinMandate' }, { id: 'purchases.tracked' }, { id: 'mandates.category' }],
+        cols: [{ id: 'purchases.date' }, { id: 'purchases.item' }, { id: 'purchases.category' }, sum('purchases.amount'), { id: 'purchases.withinMandate' }, { id: 'purchases.tracked' }, { id: 'purchases.placedVia' }, { id: 'mandates.category' }],
       },
       format: title('Agent purchases checked against their mandate'),
     },

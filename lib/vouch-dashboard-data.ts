@@ -13,6 +13,8 @@ const REASON: Record<string, string> = {
 const VERDICT: Record<string, string> = { IN_MANDATE: 'In mandate', OUT_OF_MANDATE: 'Out of mandate', UNKNOWN: 'No mandate' };
 const ACTION: Record<string, string> = { FIGHT: 'Fight', OFFER: 'Offer refund', ACCEPT: 'Accept' };
 const day = (d: Date | string | null) => (d ? new Date(d).toISOString().slice(0, 10) : null);
+// Where a mandate or purchase came from: an external agent through the MCP server, or the Vouch app.
+const via = (source: string | null, client: string | null) => (source === 'mcp' ? `via MCP${client ? ` (${client})` : ''}` : 'Vouch app');
 
 export async function getVouchDashboardData(asOf = new Date()) {
   const rows = await query<{
@@ -63,8 +65,8 @@ export async function getVouchDashboardData(asOf = new Date()) {
   });
 
   const mandateRows = await query<{
-    id: string; rules: MandateRules; summary: string; hash: string; signature: string; status: string; approved_at: Date | null; buyer_email: string | null;
-  }>(`SELECT id, rules, summary, hash, signature, status, approved_at, buyer_email FROM mandates WHERE status <> 'DRAFT' ORDER BY created_at DESC`);
+    id: string; rules: MandateRules; summary: string; hash: string; signature: string; status: string; approved_at: Date | null; buyer_email: string | null; source: string | null; source_client: string | null;
+  }>(`SELECT id, rules, summary, hash, signature, status, approved_at, buyer_email, source, source_client FROM mandates WHERE status <> 'DRAFT' ORDER BY created_at DESC`);
   const mandates = mandateRows.map((m) => {
     const v = verifyMandate(m);
     return {
@@ -77,11 +79,13 @@ export async function getVouchDashboardData(asOf = new Date()) {
       expiresDate: day(m.rules.expiresAt),
       buyer: m.buyer_email ?? '-',
       signatureValid: v.hashMatches && v.signatureMatches,
+      placedVia: via(m.source, m.source_client),
     };
   });
 
-  const purchaseRows = await query<{ id: string; mandate_id: string; item_name: string; category: string | null; amount: string; in_mandate: boolean | null; created_at: Date; tracking_number: string | null }>(
-    `SELECT id, mandate_id, item_name, category, amount, in_mandate, created_at, tracking_number FROM purchases ORDER BY created_at DESC`,
+  const purchaseRows = await query<{ id: string; mandate_id: string; item_name: string; category: string | null; amount: string; in_mandate: boolean | null; created_at: Date; tracking_number: string | null; source: string | null; source_client: string | null }>(
+    `SELECT p.id, p.mandate_id, p.item_name, p.category, p.amount, p.in_mandate, p.created_at, p.tracking_number, p.source, m.source_client
+     FROM purchases p LEFT JOIN mandates m ON m.id = p.mandate_id ORDER BY p.created_at DESC`,
   );
   const purchases = purchaseRows.map((p) => ({
     id: p.id,
@@ -92,6 +96,7 @@ export async function getVouchDashboardData(asOf = new Date()) {
     withinMandate: p.in_mandate ? 'Within mandate' : 'Outside mandate',
     date: day(p.created_at),
     tracked: !!p.tracking_number,
+    placedVia: via(p.source, p.source_client),
     purchaseCount: 1,
   }));
 

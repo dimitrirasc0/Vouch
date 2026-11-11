@@ -18,6 +18,8 @@ export type MandateRow = {
   approved_at: string | null;
   status: string;
   created_at: string;
+  source?: string | null; // null = web app, "mcp" = external agent via /api/mcp
+  source_client?: string | null;
 };
 
 export async function createMandate(rawText: string, rules: MandateRules): Promise<MandateRow> {

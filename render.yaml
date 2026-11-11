@@ -32,5 +32,7 @@ services:
         sync: false
       - key: MANDATE_SIGNING_SECRET
         sync: false
+      - key: MCP_API_KEY
+        sync: false
       - key: AG_STUDIO
         sync: false

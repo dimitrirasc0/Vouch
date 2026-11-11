@@ -20,6 +20,7 @@ export type PurchaseRow = {
   tracking_number: string | null;
   carrier: string | null;
   created_at: string;
+  source?: string | null; // null = web app, "mcp" = external agent via /api/mcp
 };
 
 export class MandateViolation extends Error {

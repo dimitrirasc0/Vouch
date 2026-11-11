@@ -86,3 +86,9 @@ CREATE TABLE IF NOT EXISTS webhook_events (
   payload       JSONB NOT NULL,
   received_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Where a mandate or purchase came from: NULL = the Vouch web app, 'mcp' = an external agent via
+-- the MCP server (/api/mcp). source_client is the MCP client's name when it sends one.
+ALTER TABLE mandates  ADD COLUMN IF NOT EXISTS source TEXT;
+ALTER TABLE mandates  ADD COLUMN IF NOT EXISTS source_client TEXT;
+ALTER TABLE purchases ADD COLUMN IF NOT EXISTS source TEXT;

@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { betaZodTool } from '@anthropic-ai/sdk/helpers/beta/zod';
 import { claude, FALLBACK, MODEL } from '../claude';
 import { query } from '../db';
-import { catalog, findItem } from '../catalog';
+import { catalog, findItem, searchCatalog } from '../catalog';
 import { checkMandate } from '../mandate';
 import { getMandate } from '../mandates';
 import { addTracking, MandateViolation, purchase, type PurchaseRow } from '../purchases';
@@ -62,11 +62,7 @@ export async function runShopper(mandateId: string, { overstep = false } = {}) {
       name: 'search_catalog',
       description: 'Search the store catalog. Returns matching items with id, name, category, price and delivery days.',
       inputSchema: z.object({ query: z.string().describe('Keywords, e.g. "usb-c charger 45W"') }),
-      run: logged('search_catalog', ({ query: q }) => {
-        const words = q.toLowerCase().split(/\W+/).filter(Boolean);
-        const hits = catalog.filter((i) => words.some((w) => `${i.name} ${i.category}`.toLowerCase().includes(w)));
-        return hits.length ? hits : catalog;
-      }),
+      run: logged('search_catalog', ({ query: q }) => searchCatalog(q)),
     }),
     betaZodTool({
       name: 'check_mandate',
